@@ -35,7 +35,18 @@ export async function POST(request: NextRequest) {
       console.log(
         `Skipping: calendar ${calendarId} not in allowed list [${ALLOWED_CALENDAR_IDS.join(", ")}]`
       );
-      return NextResponse.json({ skipped: true }, { status: 200 });
+      return NextResponse.json(
+        {
+          skipped: true,
+          debug: {
+            received_calendar_id: calendarId,
+            allowed_ids: ALLOWED_CALENDAR_IDS,
+            payload_keys: Object.keys(payload),
+            full_payload: payload,
+          },
+        },
+        { status: 200 }
+      );
     }
 
     // Extract contact info — grab every address-related field
