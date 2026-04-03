@@ -27,90 +27,43 @@ export async function POST(request: NextRequest) {
       JSON.stringify(payload, null, 2)
     );
 
-    // Extract calendar ID from payload
-    const calendarId =
-      payload.calendar_id || payload.calendarId || payload.calenderId;
+    // GHL nests calendar data under payload.calendar
+    const calendar = payload.calendar || {};
+    const calendarId = calendar.id;
 
     if (!calendarId || !ALLOWED_CALENDAR_IDS.includes(calendarId)) {
       console.log(
         `Skipping: calendar ${calendarId} not in allowed list [${ALLOWED_CALENDAR_IDS.join(", ")}]`
       );
-      return NextResponse.json(
-        {
-          skipped: true,
-          debug: {
-            received_calendar_id: calendarId,
-            allowed_ids: ALLOWED_CALENDAR_IDS,
-            payload_keys: Object.keys(payload),
-            full_payload: payload,
-          },
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({ skipped: true }, { status: 200 });
     }
 
-    // Extract contact info — grab every address-related field
-    const contact = payload.contact || {};
-    const contactName =
-      contact.name ||
-      `${contact.first_name || contact.firstName || ""} ${contact.last_name || contact.lastName || ""}`.trim() ||
-      "Unknown";
+    // Contact info is at the top level of the payload
+    const contactName = payload.full_name || "Unknown";
+    const phone = payload.phone || "";
+    const email = payload.email || "";
 
-    const phone =
-      contact.phone || contact.phoneNumber || contact.phone_number || "";
-    const email = contact.email || "";
+    // Address fields — top level
+    const street = payload.address1 || "";
+    const city = payload.city || "";
+    const state = payload.state || "";
+    const zip = payload.postal_code || "";
+    const unit = payload["Unit #"] || "";
 
-    // Address fields — try multiple possible field names from GHL
-    const street =
-      contact.address1 ||
-      contact.street ||
-      contact.streetAddress ||
-      contact.address ||
-      "";
-    const unit =
-      contact.address2 ||
-      contact.unit ||
-      contact.addressLine2 ||
-      contact.suite ||
-      "";
-    const city = contact.city || "";
-    const state = contact.state || contact.province || "";
-    const zip =
-      contact.postal_code ||
-      contact.postalCode ||
-      contact.zip ||
-      contact.zipCode ||
-      "";
-
-    const calendarName =
-      payload.calendar_name ||
-      payload.calendarName ||
-      payload.calendar?.name ||
-      "Unknown Calendar";
+    const calendarName = calendar.calendarName || "Unknown Calendar";
+    const user = payload.user || {};
     const assignedUser =
-      payload.assigned_user ||
-      payload.assignedTo ||
-      payload.user?.name ||
-      "";
-    const appointmentId =
-      payload.appointment_id ||
-      payload.appointmentId ||
-      payload.id ||
-      "";
-    const startTime =
-      payload.start_time ||
-      payload.startTime ||
-      payload.appointment?.start_time ||
-      "";
-    const endTime =
-      payload.end_time ||
-      payload.endTime ||
-      payload.appointment?.end_time ||
-      "";
+      [user.firstName, user.lastName].filter(Boolean).join(" ") || "";
+
+    const appointmentId = calendar.appointmentId || "";
+    const startTime = calendar.startTime || "";
+    const endTime = calendar.endTime || "";
+    const timeZone = calendar.selectedTimezone || "America/Chicago";
 
     // Build full address string
     const addressParts = [street, city, state, zip].filter(Boolean);
-    const fullAddress = addressParts.join(", ") || "Not provided";
+    const fullAddress =
+      payload.full_address || addressParts.join(", ") || "Not provided";
 
     // Build description
     const descriptionLines = [
@@ -135,6 +88,7 @@ export async function POST(request: NextRequest) {
       description,
       startTime,
       endTime,
+      timeZone,
     });
 
     // Store mapping in Supabase

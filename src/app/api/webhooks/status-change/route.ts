@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
       JSON.stringify(payload, null, 2)
     );
 
-    const calendarId =
-      payload.calendar_id || payload.calendarId || payload.calenderId;
+    // GHL nests calendar data under payload.calendar
+    const calendar = payload.calendar || {};
+    const calendarId = calendar.id;
 
     if (!calendarId || !ALLOWED_CALENDAR_IDS.includes(calendarId)) {
       console.log(
@@ -38,15 +39,12 @@ export async function POST(request: NextRequest) {
     }
 
     const status = (
+      calendar.status ||
+      calendar.appoinmentStatus ||
       payload.status ||
-      payload.appointment_status ||
       ""
     ).toLowerCase();
-    const appointmentId =
-      payload.appointment_id ||
-      payload.appointmentId ||
-      payload.id ||
-      "";
+    const appointmentId = calendar.appointmentId || "";
 
     if (!appointmentId) {
       console.error("No appointment ID found in payload");
@@ -91,20 +89,16 @@ export async function POST(request: NextRequest) {
       console.log(
         `Cancelled: deleted Google event ${mapping.google_event_id} for appointment ${appointmentId}`
       );
-      return NextResponse.json({ success: true, action: "deleted" }, { status: 200 });
+      return NextResponse.json(
+        { success: true, action: "deleted" },
+        { status: 200 }
+      );
     }
 
     if (status === "rescheduled") {
-      const startTime =
-        payload.start_time ||
-        payload.startTime ||
-        payload.appointment?.start_time ||
-        "";
-      const endTime =
-        payload.end_time ||
-        payload.endTime ||
-        payload.appointment?.end_time ||
-        "";
+      const startTime = calendar.startTime || "";
+      const endTime = calendar.endTime || "";
+      const timeZone = calendar.selectedTimezone || "America/Chicago";
 
       if (!startTime || !endTime) {
         console.error("Rescheduled but missing new start/end time");
@@ -114,7 +108,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      await updateEvent(mapping.google_event_id, { startTime, endTime });
+      await updateEvent(mapping.google_event_id, {
+        startTime,
+        endTime,
+        timeZone,
+      });
 
       console.log(
         `Rescheduled: updated Google event ${mapping.google_event_id} for appointment ${appointmentId}`
