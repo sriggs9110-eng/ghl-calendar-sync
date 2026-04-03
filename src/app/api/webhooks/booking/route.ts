@@ -110,19 +110,9 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    const errMsg =
-      error instanceof Error ? error.message : JSON.stringify(error);
-    const errDetail = (error as { response?: { data?: unknown } })?.response
-      ?.data;
     console.error("Error processing booking webhook:", error);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        detail: errMsg,
-        google_response: errDetail || null,
-        calendar_id_used: process.env.GOOGLE_CALENDAR_ID || "NOT_SET",
-        has_json_key: !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
-      },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
