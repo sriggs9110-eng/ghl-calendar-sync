@@ -110,9 +110,11 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
+    const errMsg =
+      error instanceof Error ? error.message : JSON.stringify(error);
     console.error("Error processing booking webhook:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", detail: errMsg },
       { status: 500 }
     );
   }

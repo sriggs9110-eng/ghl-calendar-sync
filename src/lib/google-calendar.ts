@@ -3,10 +3,18 @@ import { google } from "googleapis";
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
 
 function getAuth() {
-  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || "").replace(
-    /\\n/g,
-    "\n"
-  );
+  let privateKey = process.env.GOOGLE_PRIVATE_KEY || "";
+
+  // Strip wrapping quotes if present (some env var configs add them)
+  if (
+    (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+    (privateKey.startsWith("'") && privateKey.endsWith("'"))
+  ) {
+    privateKey = privateKey.slice(1, -1);
+  }
+
+  // Replace literal \n with actual newlines
+  privateKey = privateKey.replace(/\\n/g, "\n");
 
   return new google.auth.JWT({
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
