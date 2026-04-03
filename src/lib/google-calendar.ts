@@ -3,22 +3,31 @@ import { google } from "googleapis";
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
 
 function getAuth() {
-  let privateKey = process.env.GOOGLE_PRIVATE_KEY || "";
+  // Primary: use full JSON key from GOOGLE_SERVICE_ACCOUNT_JSON
+  const jsonKey = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (jsonKey) {
+    const credentials = JSON.parse(jsonKey);
+    return new google.auth.GoogleAuth({
+      credentials,
+      scopes: SCOPES,
+    });
+  }
 
-  // Strip wrapping quotes if present (some env var configs add them)
+  // Fallback: use individual env vars
+  let privateKey = process.env.GOOGLE_PRIVATE_KEY || "";
   if (
     (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
     (privateKey.startsWith("'") && privateKey.endsWith("'"))
   ) {
     privateKey = privateKey.slice(1, -1);
   }
-
-  // Replace literal \n with actual newlines
   privateKey = privateKey.replace(/\\n/g, "\n");
 
-  return new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: privateKey,
+  return new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: privateKey,
+    },
     scopes: SCOPES,
   });
 }
