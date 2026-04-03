@@ -5,7 +5,7 @@ let _supabase: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient {
   if (!_supabase) {
     _supabase = createClient(
-      process.env.SUPABASE_URL || "https://xazhbbafehosslcvbnia.supabase.co",
+      process.env.SUPABASE_URL || "https://gczdxakflonerwgpremt.supabase.co",
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
   }
